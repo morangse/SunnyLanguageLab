@@ -1,0 +1,38 @@
+window.runStudyChecks = async function () {
+  const results = [], root = study.root;
+  const wait = time => new Promise(resolve => setTimeout(resolve, time));
+  async function until(predicate) { for (let i = 0; i < 120; i++) { if (predicate()) return; await wait(20); } throw new Error('UI timeout'); }
+  const assert = (value, label) => { if (!value) throw new Error(label); results.push(label); };
+  const click = action => root.querySelector('[data-action="' + action + '"]').click();
+  study.video.pause(); study.video.currentTime = 0.4; study.tick(true);
+  assert(!root.querySelector('.inline .native-text'), 'Chinese is absent, not blurred text, while concealed');
+  click('reveal-native'); assert(root.querySelector('.inline .native-text')?.textContent === cues[0].native, 'Tap reveals current Chinese');
+  assert(root.querySelector('.cue.current .native-text')?.textContent === cues[0].native, 'Transcript and inline reveal agree');
+  media.time=5.3;study.tick(); assert(!root.querySelector('.inline .native-text')&&!root.querySelector('.transcript .native-text'), 'Cue change hides previously revealed Chinese');
+  click('reveal-native');click('replay');await wait(100);assert(!root.querySelector('.inline .native-text'),'Replay hides Chinese again');
+  video.pause();video.currentTime=0.4;study.tick(true);
+  const word=root.querySelector('.cue.current .word');const before=calls.filter(row=>row.type==='lookup').length;
+  word.dispatchEvent(new PointerEvent('pointerdown',{pointerType:'touch',bubbles:true}));word.dispatchEvent(new PointerEvent('pointercancel',{pointerType:'touch',bubbles:true}));
+  assert(calls.filter(row=>row.type==='lookup').length===before,'Touch scroll cancellation does not query');
+  word.click();await until(()=>root.querySelector('.definition')?.textContent.includes('练习'));
+  assert(root.querySelector('.definition').textContent.includes('练习'),'Word lookup displays real offline Chinese data');
+  click('save');await until(()=>items.length===1);assert(items[0].meaning.includes('练习')&&items[0].sentence===cues[0].text,'Saved vocabulary retains Chinese and context');
+  click('english');await until(()=>root.querySelector('.details')?.textContent.includes('an attempt'));
+  assert(!root.querySelector('.lexicon img')&&root.querySelector('.details').textContent.includes('<img'),'Online markup is rendered as inert text');
+  click('ai');await until(()=>root.querySelector('.details')?.textContent.includes('fixture-only'));assert(root.querySelector('.details').textContent.includes('反复尝试'),'AI explanation only loads after explicit action');
+  click('close-card');assert(video.paused,'Closing lookup does not unexpectedly resume playback');
+  click('phrase');let words=root.querySelectorAll('.cue.current .word');words[0].click();words=root.querySelectorAll('.cue.current .word');words[1].click();
+  const lookupCount=calls.filter(row=>row.type==='lookup').length;assert(!root.querySelector('[data-action="phrase-confirm"]').disabled,'Two endpoints enable explicit phrase confirmation');
+  assert(!study.card,'Selecting phrase never opens lookup automatically');click('phrase-confirm');await until(()=>calls.filter(row=>row.type==='lookup').length>lookupCount);
+  assert(calls.filter(row=>row.type==='lookup').at(-1).text==='Practice makes','Phrase confirmation uses the selected range');click('close-card');
+  root.querySelector('[data-tab="practice"]').click();const toggle=root.querySelector('[data-setting="blurNative"]');toggle.checked=false;toggle.dispatchEvent(new Event('change',{bubbles:true}));await until(()=>root.querySelector('.inline .native-text'));
+  assert(root.querySelector('.inline .native-text').textContent===cues[0].native,'Disabling concealment reveals Chinese immediately');
+  root.querySelector('[data-tab="vocabulary"]').click();await until(()=>root.querySelector('.term'));assert(root.querySelector('.term strong').textContent==='Practice','Vocabulary panel reads saved terms');
+  click('remove');await until(()=>items.length===0);assert(items.length===0,'Vocabulary remove updates local state');
+  study.setExpanded(false);const bounds=[...root.querySelectorAll('.transport button,.head button')].map(node=>node.getBoundingClientRect());
+  assert(bounds.every(rect=>rect.height>=44),'Primary controls retain 44 pixel touch height');
+  assert(bounds.every(rect=>rect.left>=0&&rect.right<=innerWidth+1&&rect.top>=0&&rect.bottom<=innerHeight+1),'Collapsed playback controls stay in viewport');
+  assert(document.documentElement.scrollWidth<=innerWidth,'Document has no horizontal overflow');
+  assert(!errors.length,'Interaction checks complete without runtime errors');
+  return {passed:results.length,results};
+};

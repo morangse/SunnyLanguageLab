@@ -1,0 +1,17 @@
+{
+  "compared_new_code_files": 21,
+  "retained_independent_modules": [
+    "src/background/chinese-dictionary.js",
+    "src/background/sync.js",
+    "src/background/vocab-store.js",
+    "src/options/sync-ui.js",
+    "src/shared/sync-model.js"
+  ],
+  "identical_legacy_code_files": [],
+  "matching_eight_line_blocks_over_240_chars": [],
+  "identical_legacy_icons": [],
+  "secret_pattern_findings": [],
+  "personal_archive_defaults": [],
+  "legacy_archives_in_snapshot": [],
+  "scope": "Mechanical comparison with the prior client, excluding explicitly retained independent modules. Not a guarantee against all common syntax or provenance risks."
+}

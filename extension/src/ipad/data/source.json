@@ -1,0 +1,10 @@
+{
+  "name": "ECDICT offline English-Chinese subset",
+  "source": "https://raw.githubusercontent.com/skywind3000/ECDICT/ab22ad36302cafc6349a050e2b60894855208055/ecdict.csv",
+  "commit": "ab22ad36302cafc6349a050e2b60894855208055",
+  "license": "MIT",
+  "headwords": 38207,
+  "lookupForms": 66793,
+  "sourceSHA256": "d1ecbdf9ee2b920afb6f430ca6b6bb9f559588cf0dff86e04bd255f9390843cc",
+  "selection": "Tagged/exam/Oxford/Collins headwords or BNC/FRQ rank <= 30000; plus listed inflections"
+}

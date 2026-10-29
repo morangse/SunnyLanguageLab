@@ -1,0 +1,33 @@
+name: 问题反馈
+description: 报告安装、字幕、查词、触控或同步问题
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: 请勿上传密钥、同步口令、证书或私人词库。安全漏洞请先阅读 SECURITY.md。
+  - type: input
+    id: version
+    attributes:
+      label: Sunny 版本与安装方式
+      placeholder: v0.6.0 / Chrome 解压安装或 Safari 自签
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: 设备、系统与浏览器版本
+      placeholder: iPad 型号 / iPadOS 版本 / Safari；或 Windows / Chrome 版本
+    validations:
+      required: true
+  - type: input
+    id: video
+    attributes:
+      label: 视频链接与页面模式
+      description: 可公开的视频链接；移动网页或桌面网页、横屏或竖屏。
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤、期待结果与实际结果
+      description: 字幕问题请说明在画面字幕还是字幕列表；可附遮盖敏感信息的截图。
+    validations:
+      required: true

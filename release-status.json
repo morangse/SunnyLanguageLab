@@ -1,0 +1,9 @@
+{
+  "version": "0.6.0",
+  "independent_rewrite": true,
+  "project_license": "MIT",
+  "source_review": "completed",
+  "review_record": "docs/maintainers/rewrite.md",
+  "distribution": "preview",
+  "real_device_validation": "pending"
+}

@@ -1,0 +1,21 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "sunny-language-sync",
+  "main": "src/index.js",
+  "compatibility_date": "2026-10-29",
+  "workers_dev": true,
+  "vars": {
+    "ARCHIVE_REPO": "YOUR_GITHUB_USERNAME/YOUR_VOCAB_REPO",
+    "ARCHIVE_BRANCH": "main",
+    "ARCHIVE_PREFIX": "SunnyLanguageLab"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "sunny-language-sync",
+      "database_id": "REPLACE_WITH_YOUR_D1_DATABASE_ID",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "triggers": { "crons": ["*/15 * * * *"] }
+}

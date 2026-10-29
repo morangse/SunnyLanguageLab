@@ -1,0 +1,15 @@
+name: 功能建议
+description: 说明你想完成的学习任务和遇到的困难
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: 使用场景与问题
+      description: 哪台设备、什么页面、想完成什么练习？
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 希望怎样改善
+      description: 可以提供操作示例或有使用权限的参考图。

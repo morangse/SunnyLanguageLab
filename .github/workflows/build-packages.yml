@@ -1,0 +1,186 @@
+name: Build SunnyLanguageLab
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main, 'codex/**']
+    tags: ['v*']
+    paths:
+      - 'extension/**'
+      - 'scripts/build_variants.py'
+      - 'scripts/build_chinese_dictionary.py'
+      - 'scripts/package_source.py'
+      - '.github/workflows/build-packages.yml'
+      - 'server/**'
+      - 'tests/**'
+      - 'package.json'
+      - 'docs/**'
+      - '*.md'
+      - 'release-status.json'
+      - 'scripts/check_*.py'
+
+permissions:
+  contents: read
+
+jobs:
+  webextensions:
+    name: Validate and package WebExtensions
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node for sync integration tests
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Check documentation links
+        run: python3 scripts/check_docs.py
+      - name: Report publication readiness
+        run: python3 scripts/check_release_ready.py --report
+      - name: Validate source snapshot and licenses
+        run: python3 scripts/check_release_ready.py
+      - name: Test offline sync and GitHub archive
+        run: node --test tests/*.test.js
+      - name: Validate Worker bundle without deployment
+        env:
+          WRANGLER_SEND_METRICS: 'false'
+        run: |
+          npm ci --prefix server
+          cd server
+          npx wrangler deploy --dry-run --outdir ../worker-build
+      - name: Build Chrome and Safari extension ZIPs
+        run: python3 scripts/build_variants.py
+      - name: Check JavaScript syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          find dist/chrome/src dist/safari/src -type f -name '*.js' -print0 |
+            xargs -0 -n 1 node --check
+      - name: Upload Chrome and Safari ZIPs
+        uses: actions/upload-artifact@v4
+        with:
+          name: SunnyLanguageLab-WebExtensions
+          path: dist/*.zip
+          if-no-files-found: error
+      - name: Package source directories without local state
+        run: python3 scripts/package_source.py
+      - name: Upload source preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: SunnyLanguageLab-Source-Preview
+          path: dist/*source-preview.zip
+          if-no-files-found: error
+
+  ipad:
+    name: Build unsigned iPhone and iPad Safari IPA
+    needs: webextensions
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'push' && contains(github.event.head_commit.message, '[build-ios]'))
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Prepare Safari extension
+        run: python3 scripts/build_variants.py
+      - name: Convert to an iOS Xcode project
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodebuild -version
+          if xcrun --find safari-web-extension-packager >/dev/null 2>&1; then
+            PACKAGER=safari-web-extension-packager
+          else
+            PACKAGER=safari-web-extension-converter
+          fi
+          xcrun "$PACKAGER" "$PWD/dist/safari" \
+            --project-location "$PWD/generated" \
+            --app-name SunnyLanguageLab \
+            --bundle-identifier com.morangse.sunnylanguagelab \
+            --swift --ios-only --copy-resources --no-open --no-prompt
+          PROJECT="$(find "$PWD/generated" -type d -name '*.xcodeproj' -print -quit)"
+          test -n "$PROJECT" || { echo 'Xcode project not created'; exit 1; }
+          echo "PROJECT=$PROJECT" >> "$GITHUB_ENV"
+      - name: Normalize app bundle identifier
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - "$PROJECT/project.pbxproj" <<'PY'
+          from pathlib import Path
+          import sys
+          project = Path(sys.argv[1])
+          content = project.read_text()
+          old = "com.morangse.SunnyLanguageLab"
+          new = "com.morangse.sunnylanguagelab"
+          if old not in content and new not in content:
+              raise SystemExit("Unexpected app bundle ID; inspect generated Xcode project")
+          project.write_text(content.replace(old, new))
+          PY
+      - name: Compile unsigned app
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodebuild -list -json -project "$PROJECT" > schemes.json
+          SCHEME="$(python3 -c 'import json; d=json.load(open("schemes.json")); s=d["project"]["schemes"]; print(next((x for x in s if "iOS" in x and "Extension" not in x), s[0]))')"
+          xcodebuild \
+            -project "$PROJECT" -scheme "$SCHEME" \
+            -configuration Release -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath "$PWD/DerivedData" \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build
+      - name: Package unsigned IPA with Safari extension
+        shell: bash
+        run: |
+          set -euo pipefail
+          APP="$(find "$PWD/DerivedData/Build/Products/Release-iphoneos" -maxdepth 1 -type d -name '*.app' -print -quit)"
+          test -n "$APP" || { echo 'iOS .app not found'; exit 1; }
+          test "$(find "$APP" -type d -name '*.appex' | wc -l | tr -d ' ')" -gt 0 ||
+            { echo 'Safari .appex missing'; exit 1; }
+          mkdir -p Payload output
+          ditto "$APP" "Payload/$(basename "$APP")"
+          zip -qry "$PWD/output/SunnyLanguageLab-iOS-v0.6.0-unsigned.ipa" Payload
+          ls -lh output/*.ipa
+      - name: Upload unsigned IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: SunnyLanguageLab-iOS-unsigned-IPA
+          path: output/*.ipa
+          if-no-files-found: error
+
+  release:
+    name: Prepare draft versioned GitHub Release
+    needs: [webextensions, ipad]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download WebExtensions
+        uses: actions/download-artifact@v4
+        with:
+          name: SunnyLanguageLab-WebExtensions
+          path: release-assets
+      - name: Download unsigned IPA
+        uses: actions/download-artifact@v4
+        with:
+          name: SunnyLanguageLab-iOS-unsigned-IPA
+          path: release-assets
+      - name: Download source preview
+        uses: actions/download-artifact@v4
+        with:
+          name: SunnyLanguageLab-Source-Preview
+          path: release-assets
+      - name: Generate artifact checksums
+        run: |
+          cd release-assets
+          sha256sum *.zip *.ipa > SHA256SUMS.txt
+      - name: Create draft GitHub Release for maintainer review
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" release-assets/*.zip release-assets/*.ipa release-assets/SHA256SUMS.txt --draft --prerelease \
+            --title "SunnyLanguageLab $GITHUB_REF_NAME" \
+            --notes "Preview build: Chrome extension ZIP, Safari WebExtension resources, and unsigned iPhone/iPad IPA. The IPA requires signing. Read the platform tutorials and compatibility matrix before installation. Maintainer review is required before publication."
+

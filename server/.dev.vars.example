@@ -1,0 +1,4 @@
+# Local development only. Real values belong in .dev.vars (ignored by Git).
+# Generate with: node -e "console.log(crypto.randomBytes(32).toString('base64url'))"
+SYNC_TOKEN=REPLACE_WITH_RANDOM_32_BYTE_TOKEN
+GITHUB_TOKEN=REPLACE_WITH_YOUR_ARCHIVE_REPO_CONTENTS_WRITE_TOKEN
