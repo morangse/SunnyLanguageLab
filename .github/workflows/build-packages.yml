@@ -181,7 +181,12 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: |
           if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
-            echo "A release already exists for this tag; keep its reviewed assets."
+            ASSET_COUNT="$(gh release view "$GITHUB_REF_NAME" --json assets --jq '.assets | length')"
+            if [ "$ASSET_COUNT" = "0" ]; then
+              gh release upload "$GITHUB_REF_NAME" release-assets/*.zip release-assets/*.ipa release-assets/SHA256SUMS.txt
+            else
+              echo "The release already has assets; keep the existing files."
+            fi
             exit 0
           fi
           gh release create "$GITHUB_REF_NAME" release-assets/*.zip release-assets/*.ipa release-assets/SHA256SUMS.txt --draft --prerelease \
