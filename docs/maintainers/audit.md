@@ -14,4 +14,4 @@
 - 本地 Markdown 链接与来源 / 许可检查通过。
 - 常见 GitHub、Google、Anthropic 凭据和私钥块格式未命中；未发现维护者私人归档默认地址。扫描不是无敏感信息的保证。
 
-新版本 iOS 原生编译和真实 Safari 设备验证需要另外记录。iPhone 继续标为实验支持，详见 [兼容性](../compatibility.md)。
+新版本 iPhone / iPad 未签名宿主应用与 Safari 扩展在 [Actions](https://github.com/morangse/SunnyLanguageLab/actions/runs/40876268200) 编译通过。真实 Safari 设备验证仍待完成，iPhone 继续标为实验支持，详见 [兼容性](../compatibility.md)。

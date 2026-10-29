@@ -180,6 +180,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            echo "A release already exists for this tag; keep its reviewed assets."
+            exit 0
+          fi
           gh release create "$GITHUB_REF_NAME" release-assets/*.zip release-assets/*.ipa release-assets/SHA256SUMS.txt --draft --prerelease \
             --title "SunnyLanguageLab $GITHUB_REF_NAME" \
             --notes "Preview build: Chrome extension ZIP, Safari WebExtension resources, and unsigned iPhone/iPad IPA. The IPA requires signing. Read the platform tutorials and compatibility matrix before installation. Maintainer review is required before publication."
