@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Package a reviewable source snapshot without local state or build dependencies."""
 import argparse
+import json
 import hashlib
 import zipfile
 from pathlib import Path
@@ -30,7 +31,8 @@ def source_files():
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--output', default='dist/SunnyLanguageLab-v0.6.0-source-preview.zip')
+    version = json.loads((ROOT / 'extension/manifest.json').read_text(encoding='utf-8'))['version']
+    parser.add_argument('--output', default=f'dist/SunnyLanguageLab-v{version}-source-preview.zip')
     args = parser.parse_args()
     output = Path(args.output).resolve()
     output.parent.mkdir(parents=True, exist_ok=True)

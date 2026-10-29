@@ -1,4 +1,4 @@
-import { getSettings, setSettings, readKey, writeKey } from "./settings.js";
+import { getSettings, setSettings, readKey, writeKey, recoverLegacyAI } from "./settings.js";
 import { createLookupCache } from "./cache.js";
 import { lookupChinese } from "./chinese-dictionary.js";
 import { lookupEnglish } from "./wiktionary.js";
@@ -10,10 +10,12 @@ const store = createVocabStore(chrome.storage.local);
 const sync = createSyncClient(store);
 const cache = createLookupCache();
 const optionsURL = chrome.runtime.getURL("src/options/options.html");
-const allowedPreferences = new Set(["enabled", "learnLang", "nativeLang", "blurNative", "blurLearn", "autoPause", "fontScale", "showSidebar"]);
+const allowedPreferences = new Set(["enabled", "learnLang", "nativeLang", "blurNative", "blurLearn", "autoPause", "fontScale", "showSidebar", "vocabHighlight", "vocabLevel", "vocabStyle", "hoverPause", "subtitleBackdrop"]);
 const attemptSync = () => { void sync.run().catch(() => {}); };
 function optionsOnly(sender) {
-  if (sender.id !== chrome.runtime.id || sender.tab || sender.url !== optionsURL) throw new Error("请在插件设置页操作");
+  // The settings page can also run inside its own extension-origin iframe.
+  // Browser-provided sender.url remains the boundary; a YouTube content script is never trusted.
+  if (sender.id !== chrome.runtime.id || String(sender.url || "").split(/[?#]/)[0] !== optionsURL) throw new Error("请在插件设置页操作");
 }
 function selected(message) {
   const text = String(message.text || "").trim();
@@ -35,6 +37,7 @@ const routes = {
     cache.clear();
     return { settings: await setSettings(message.settings || {}) };
   },
+  async recoverLegacyAI(_message, sender) { optionsOnly(sender); cache.clear(); return recoverLegacyAI(); },
   async lookup(message) {
     const input = selected(message);
     const result = input.lang.split("-")[0] === "en" ? await lookupChinese(input.text) : null;
@@ -67,7 +70,11 @@ const routes = {
   async vocabLegacyBackup(_message, sender) { optionsOnly(sender); return { backup: await store.legacyBackup() }; },
   async vocabRestore(message, sender) { optionsOnly(sender); const result = await store.restore(message.backup); attemptSync(); return result; },
   async clearCache(_message, sender) { optionsOnly(sender); return { cleared: cache.clear() }; },
-  async openOptions() { await chrome.runtime.openOptionsPage(); return { ok: true }; }
+  async openOptions(message) {
+    if (["ai", "sync"].includes(message.section)) await chrome.tabs.create({ url: optionsURL + "#" + message.section });
+    else await chrome.runtime.openOptionsPage();
+    return { ok: true };
+  }
 };
 
 chrome.runtime.onMessage.addListener((message, sender, reply) => {

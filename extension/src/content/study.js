@@ -44,7 +44,9 @@ chrome.runtime.onMessage.addListener((message, sender) => {
       if (old.blurNative !== target.settings.blurNative || old.blurLearn !== target.settings.blurLearn) {
         target.nativeVisible = false; target.originalVisible = false;
       }
-      target.render(); target.renderInline(); await target.refreshSaved();
+      // Preserve unsaved form input in the extension-origin settings drawer.
+      if (target.tab !== "settings") target.render();
+      target.renderInline(); await target.refreshSaved();
       if (old.learnLang !== target.settings.learnLang || old.nativeLang !== target.settings.nativeLang) void load();
     } catch (_) { /* The next page wakeup retries after an extension update. */ }
   }, 100);

@@ -15,13 +15,19 @@ test('content scripts cannot read keys, mutate AI credentials or configure sync 
   const message = (body, sender) => new Promise(resolve => listener(body, sender, resolve));
   const content = { id: chrome.runtime.id, tab: { id: 1 }, url: 'https://www.youtube.com/watch?v=test' };
   const options = { id: chrome.runtime.id, url: chrome.runtime.getURL('src/options/options.html') };
-  for (const type of ['saveConfig', 'clearCache', 'syncConfigure', 'syncDisconnect', 'syncNow', 'syncArchive', 'vocabBackup', 'vocabLegacyBackup', 'vocabRestore']) {
+  const embedded = { ...options, tab: { id: 1 }, frameId: 2, url: options.url + '?embedded=1#ai' };
+  for (const type of ['saveConfig', 'recoverLegacyAI', 'clearCache', 'syncConfigure', 'syncDisconnect', 'syncNow', 'syncArchive', 'vocabBackup', 'vocabLegacyBackup', 'vocabRestore']) {
     assert.match((await message({ type }, content)).error, /设置页/);
   }
   await message({ type: 'preferencesPatch', patch: { llmProvider: 'gemini', geminiModel: 'evil-model', enabled: false } }, content);
   const state = await message({ type: 'getState' }, content);
   assert.equal(state.settings.enabled, false); assert.equal(state.settings.llmProvider, 'none'); assert.ok(state.hasKeys.gemini);
   assert.ok(!JSON.stringify(state).includes('private-gemini-test-key'));
+  const updated = await message({ type: 'saveConfig', settings: { llmProvider: 'gemini', geminiModel: 'fixture-model' } }, embedded);
+  assert.equal(updated.settings.geminiModel, 'fixture-model');
+  for (const url of [options.url + '.evil', 'https://www.youtube.com/src/options/options.html?embedded=1#ai']) {
+    assert.match((await message({ type: 'saveConfig' }, { ...embedded, url })).error, /设置页/);
+  }
   const config = await message({ type: 'syncConfigure', endpoint: 'https://test.user.workers.dev', token: TOKEN }, options);
   assert.ok(config.hasToken); assert.ok(!JSON.stringify(config).includes(TOKEN));
   await message({ type: 'syncDisconnect' }, options);

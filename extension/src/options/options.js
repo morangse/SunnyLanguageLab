@@ -1,3 +1,4 @@
+embeddedSection(); addEventListener("hashchange", embeddedSection);
 const send = async (type, payload = {}) => {
   const response = await chrome.runtime.sendMessage({ type, ...payload });
   if (!response || response.error) throw new Error(response?.error || "扩展未响应，请重新打开设置");
@@ -55,4 +56,19 @@ $("#clear-cache").addEventListener("click", async () => {
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area === "local" && changes.vocab) $("#vocab-count").textContent = `本机已收藏 ${changes.vocab.newValue?.length || 0} 个词 / 表达。`;
 });
+$("recover-ai").addEventListener("click", async () => {
+  try {
+    const result = await send("recoverLegacyAI"); await initialize();
+    $("ai-message").textContent = result.recovered ? `恢复了 ${result.recovered} 个本机旧密钥。请核对模型并保存 AI 配置，确认服务访问权限。` : "未找到可恢复的旧密钥，或当前密钥已存在。可直接填写新配置。";
+  } catch (error) { $("ai-message").textContent = error.message; }
+});
 void initialize().catch(error => { $("#preferences-message").textContent = error.message; });
+
+// One trusted settings page serves the full tab and the optional in-video drawer.
+function embeddedSection() {
+  if (new URLSearchParams(location.search).get("embedded") !== "1") return;
+  document.body.classList.add("embedded");
+  const section = location.hash === "#sync" ? "sync" : "ai";
+  document.body.dataset.section = section;
+  document.querySelector("details").open = true;
+}

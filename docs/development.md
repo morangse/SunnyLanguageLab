@@ -22,13 +22,13 @@ npx wrangler deploy --dry-run
 
 ## 交互模拟
 
-根目录运行 `python -m http.server 8767 --bind 127.0.0.1`，打开 `http://127.0.0.1:8767/tests/fixtures/study.html`。加载同目录 `study-checks.js` 后调用 `runStudyChecks()`，验证字幕隐藏、重播、短语、查词、收藏与布局。真实 Safari 和 YouTube 要另行测试。
+根目录运行 `python -m http.server 8767 --bind 127.0.0.1`，打开 `http://127.0.0.1:8767/tests/fixtures/study.html`。加载同目录 `study-checks.js` 后调用 `runStudyChecks()`，验证字幕隐藏、重播、桌面拖选与悬停、触屏短语、查词、收藏、小图标收起和设置入口（32 项）。真实 Safari 和 YouTube 要另行测试。
 
 ## 源码与资源
 
 入口是 `content/entry.js`，响应式面板为 `surface.js` / `skin.js`。页面桥接只传字幕数据，不传扩展存储；动态内容使用文本节点，不将远端词典或 AI 内容直接作为 HTML。
 
-词库生成脚本固定 ECDICT 来源并随包保留许可；图标由 `scripts/generate_icons.py` 从原创几何形状生成，SVG 源位于 `extension/icons/sunny.svg`。不要将旧 ZIP 或旧客户端重新复制进公开版本。
+词库生成脚本固定 ECDICT 来源并随包保留许可；`python scripts/build_word_ranks.py --csv <固定源文件>` 从同一 CSV 重建词频标记；图标由 `scripts/generate_icons.py` 从原创几何形状生成，SVG 源位于 `extension/icons/sunny.svg`。不要将旧 ZIP 或旧客户端重新复制进公开版本。
 
 ## Actions
 

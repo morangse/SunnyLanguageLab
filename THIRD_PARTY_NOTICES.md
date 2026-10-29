@@ -2,7 +2,7 @@
 
 ## ECDICT
 
-离线英汉数据来自 [skywind3000/ECDICT](https://github.com/skywind3000/ECDICT)，固定提交 `ab22ad36302cafc6349a050e2b60894855208055`，使用 MIT 许可。原始许可随包保存在 `extension/src/ipad/data/ECDICT-LICENSE.txt`。本项目生成子集与词形索引，来源和源文件校验值见同目录 `source.json`，生成脚本为 `scripts/build_chinese_dictionary.py`。
+离线英汉数据来自 [skywind3000/ECDICT](https://github.com/skywind3000/ECDICT)，固定提交 `ab22ad36302cafc6349a050e2b60894855208055`，使用 MIT 许可。原始许可随包保存在 `extension/src/ipad/data/ECDICT-LICENSE.txt`。本项目生成子集与词形索引，来源和源文件校验值见同目录 `source.json`，生成脚本为 `scripts/build_chinese_dictionary.py`。词汇标记使用同一源文件的 BNC / FRQ 词频与显式词形关系，由 `scripts/build_word_ranks.py` 生成 `word-ranks.json`，包含来源与校验值；不是官方考试等级表。
 
 ## Wiktionary
 

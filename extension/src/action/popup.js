@@ -4,11 +4,17 @@ const send = async (type, payload = {}) => {
   return response;
 };
 document.getElementById("options").addEventListener("click", () => { void send("openOptions"); });
+document.querySelectorAll('[data-section]').forEach(button => button.addEventListener('click', () => { void send('openOptions', { section: button.dataset.section }); }));
+document.getElementById('vocab-highlight').addEventListener('change', async event => {
+  try { await send('preferencesPatch', { patch: { vocabHighlight: event.target.checked } }); document.getElementById('status').textContent = '词汇标记已更新'; }
+  catch (error) { document.getElementById('status').textContent = error.message; }
+});
 document.getElementById("enabled").addEventListener("change", async event => {
   try { await send("preferencesPatch", { patch: { enabled: event.target.checked } }); document.getElementById("status").textContent = "设置已更新"; }
   catch (error) { document.getElementById("status").textContent = error.message; }
 });
 void send("getState").then(state => {
   document.getElementById("enabled").checked = state.settings.enabled;
+  document.getElementById('vocab-highlight').checked = state.settings.vocabHighlight;
   document.getElementById("status").textContent = `本机收藏 ${state.vocabCount} 个词 / 表达`;
 }).catch(error => { document.getElementById("status").textContent = error.message; });

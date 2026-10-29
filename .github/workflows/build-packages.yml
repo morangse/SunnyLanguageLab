@@ -11,6 +11,7 @@ on:
       - 'extension/**'
       - 'scripts/build_variants.py'
       - 'scripts/build_chinese_dictionary.py'
+      - 'scripts/build_word_ranks.py'
       - 'scripts/package_source.py'
       - '.github/workflows/build-packages.yml'
       - 'server/**'
@@ -139,7 +140,8 @@ jobs:
             { echo 'Safari .appex missing'; exit 1; }
           mkdir -p Payload output
           ditto "$APP" "Payload/$(basename "$APP")"
-          zip -qry "$PWD/output/SunnyLanguageLab-iOS-v0.6.0-unsigned.ipa" Payload
+          VERSION="$(python3 -c 'import json; print(json.load(open("extension/manifest.json"))["version"])')"
+          zip -qry "$PWD/output/SunnyLanguageLab-iOS-v$VERSION-unsigned.ipa" Payload
           ls -lh output/*.ipa
       - name: Upload unsigned IPA
         uses: actions/upload-artifact@v4

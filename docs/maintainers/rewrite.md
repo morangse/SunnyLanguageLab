@@ -12,11 +12,11 @@
 
 ## 保留的本项目模块
 
-此前为本项目独立编写的 `shared/sync-model.js`、`background/vocab-store.js`、`sync.js`、`chinese-dictionary.js`、`options/sync-ui.js`，以及 `server/` 和对应同步测试。它们保留已有数据协议，帮助导入旧生词。原始 AI 密钥不自动迁移。
+此前为本项目独立编写的 `shared/sync-model.js`、`background/vocab-store.js`、`sync.js`、`chinese-dictionary.js`、`options/sync-ui.js`，以及 `server/` 和对应同步测试。它们保留已有数据协议，帮助导入旧生词。原始 AI 密钥不自动迁移；0.6.1 可由用户在可信设置页主动恢复同一安装中仍保留的旧密钥，不向字幕网页回传值。
 
 ## 有许可的数据
 
-ECDICT 数据和许可保留，在线 Wiktionary 内容仍遵循内容许可。没有沿用旧词汇量分级表，也没有沿用旧图标。
+ECDICT 数据和许可保留，在线 Wiktionary 内容仍遵循内容许可。没有沿用旧词汇量分级表，也没有沿用旧图标。0.6.1 使用同一固定版本的 ECDICT BNC / FRQ 词频与显式词形关系重新生成标记数据，脚本为 `scripts/build_word_ranks.py`。
 
 ## 排除与核对
 
@@ -24,4 +24,4 @@ ECDICT 数据和许可保留，在线 Wiktionary 内容仍遵循内容许可。�
 
 ## 功能边界
 
-聚焦普通 YouTube 视频，暂不包含 Netflix、词汇量分级或系统原生全屏面板。构建与模拟通过不等于 Safari 真机全部可用；版本保持预览，实际范围见 [兼容性](../compatibility.md)。
+聚焦普通 YouTube 视频，暂不包含 Netflix 或系统原生全屏面板。0.6.1 恢复词汇量标记，桌面和触屏采用不同的输入交互。构建与模拟通过不等于 Safari 真机全部可用；版本保持预览，实际范围见 [兼容性](../compatibility.md)。

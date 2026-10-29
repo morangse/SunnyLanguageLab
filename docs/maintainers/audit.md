@@ -4,14 +4,14 @@
 
 ## 技术比较
 
-21 个新客户端代码 / 样式 / 页面 / SVG 文件与原型代码比较：无相同整文件，无命中连续 8 行且总长至少 240 字符的重复片段；4 个 PNG 图标均不同。明确保留的 5 个独立同步 / 数据模块另列，完整结果见 `source-audit.json`。该阈值检查有明确范围，不保证没有常见语法或接口相似。
+22 个新客户端代码 / 样式 / 页面 / SVG 文件与原型代码比较：无相同整文件，无命中连续 8 行且总长至少 240 字符的重复片段；4 个 PNG 图标均不同。明确保留的 5 个独立同步 / 数据模块另列，完整结果见 `source-audit.json`。该阈值检查有明确范围，不保证没有常见语法或接口相似。
 
 ## 验证
 
-- 33 项 Node / SQLite 功能测试通过。
-- 390×844、844×390、820×1180、1180×820、1440×900 五组屏幕尺寸，各 21 项交互检查通过。
+- 36 项 Node / SQLite 功能测试通过。
+- 390×844、844×390、820×1180、1180×820、1440×900 五组屏幕尺寸，各 32 项交互检查通过。
 - Chrome / Safari 两个包构建通过；Worker dry-run 通过，不代表已经部署。
 - 本地 Markdown 链接与来源 / 许可检查通过。
 - 常见 GitHub、Google、Anthropic 凭据和私钥块格式未命中；未发现维护者私人归档默认地址。扫描不是无敏感信息的保证。
 
-新版本 iPhone / iPad 未签名宿主应用与 Safari 扩展在 [Actions](https://github.com/morangse/SunnyLanguageLab/actions/runs/40876268200) 编译通过。真实 Safari 设备验证仍待完成，iPhone 继续标为实验支持，详见 [兼容性](../compatibility.md)。
+0.6.0 iPhone / iPad 未签名宿主应用与 Safari 扩展在 [Actions](https://github.com/morangse/SunnyLanguageLab/actions/runs/40876268200) 编译通过。0.6.1 原生构建需查看对应版本的新 Actions 结果。真实 Safari 设备验证仍待完成，iPhone 继续标为实验支持，详见 [兼容性](../compatibility.md)。

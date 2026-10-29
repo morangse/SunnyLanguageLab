@@ -1,5 +1,5 @@
 {
-  "compared_new_code_files": 21,
+  "compared_new_code_files": 22,
   "retained_independent_modules": [
     "src/background/chinese-dictionary.js",
     "src/background/sync.js",
