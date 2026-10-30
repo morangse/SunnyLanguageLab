@@ -1,0 +1,94 @@
+name: Publish reviewed Sunny preview
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/publish-preview.yml'
+      - 'docs/releases/preview.json'
+      - 'docs/releases/*.md'
+      - 'scripts/verify_preview_assets.py'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sunny-reviewed-preview
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[publish-preview]')
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Validate the reviewed release plan
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os, re
+          from pathlib import Path
+          plan = json.loads(Path('docs/releases/preview.json').read_text())
+          version = json.loads(Path('extension/manifest.json').read_text())['version']
+          tag = plan['tag']
+          assert re.fullmatch(r'v' + re.escape(version) + r'-preview\.[1-9][0-9]*', tag), 'Tag/version mismatch'
+          assert re.fullmatch(r'[0-9a-f]{40}', plan['build_sha']), 'Invalid build SHA'
+          assert type(plan['build_run_id']) is int and plan['build_run_id'] > 0, 'Invalid run ID'
+          notes = 'docs/releases/' + tag + '.md'
+          assert Path(notes).is_file(), 'Release notes are missing'
+          with open(os.environ['GITHUB_ENV'], 'a') as stream:
+              for key, value in {'RELEASE_TAG': tag, 'RELEASE_VERSION': version, 'BUILD_SHA': plan['build_sha'],
+                                 'BUILD_RUN_ID': plan['build_run_id'], 'RELEASE_NOTES': notes}.items():
+                  stream.write(f'{key}={value}\n')
+          PY
+      - name: Require a successful build of the unchanged application
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh api "repos/$GH_REPO/actions/runs/$BUILD_RUN_ID" > "$RUNNER_TEMP/sunny-build.json"
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          run = json.loads((Path(os.environ['RUNNER_TEMP']) / 'sunny-build.json').read_text())
+          assert run['status'] == 'completed' and run['conclusion'] == 'success', 'Build has not passed'
+          assert run['head_sha'] == os.environ['BUILD_SHA'], 'Run/commit mismatch'
+          assert run['head_branch'] == 'main' and run['event'] == 'push', 'Only main push builds may be published'
+          assert run['head_repository']['full_name'] == os.environ['GH_REPO'], 'Unexpected source repository'
+          assert run['path'] == '.github/workflows/build-packages.yml', 'Unexpected build workflow'
+          PY
+          git diff --exit-code "$BUILD_SHA" HEAD -- extension server package.json LICENSE THIRD_PARTY_NOTICES.md \
+            scripts/build_variants.py scripts/package_source.py scripts/build_chinese_dictionary.py scripts/build_word_ranks.py
+      - name: Download the three validated build artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          for NAME in SunnyLanguageLab-WebExtensions SunnyLanguageLab-iOS-unsigned-IPA SunnyLanguageLab-Source-Preview; do
+            gh run download "$BUILD_RUN_ID" --name "$NAME" --dir release-assets
+          done
+      - name: Check versions, bundled data and device families
+        run: python3 scripts/verify_preview_assets.py release-assets --version "$RELEASE_VERSION"
+      - name: Publish the reviewed preview without replacing existing releases
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            echo 'This version already has a release; refusing to replace its files.' >&2
+            exit 1
+          fi
+          if gh api "repos/$GH_REPO/git/ref/tags/$RELEASE_TAG" > "$RUNNER_TEMP/sunny-tag.json" 2>/dev/null; then
+            TAG_SHA="$(python3 -c 'import json,os; from pathlib import Path; print(json.loads((Path(os.environ["RUNNER_TEMP"])/"sunny-tag.json").read_text())["object"]["sha"])')"
+            test "$TAG_SHA" = "$BUILD_SHA" || { echo 'Existing tag points elsewhere'; exit 1; }
+          fi
+          gh release create "$RELEASE_TAG" release-assets/*.zip release-assets/*.ipa release-assets/SHA256SUMS.txt \
+            --target "$BUILD_SHA" --prerelease --latest=false \
+            --title "SunnyLanguageLab $RELEASE_TAG" --notes-file "$RELEASE_NOTES"

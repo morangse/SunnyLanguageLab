@@ -14,4 +14,4 @@
 - 本地 Markdown 链接与来源 / 许可检查通过。
 - 常见 GitHub、Google、Anthropic 凭据和私钥块格式未命中；未发现维护者私人归档默认地址。扫描不是无敏感信息的保证。
 
-0.6.0 iPhone / iPad 未签名宿主应用与 Safari 扩展在 [Actions](https://github.com/morangse/SunnyLanguageLab/actions/runs/40876268200) 编译通过。0.6.1 原生构建需查看对应版本的新 Actions 结果。真实 Safari 设备验证仍待完成，iPhone 继续标为实验支持，详见 [兼容性](../compatibility.md)。
+0.6.1 的双浏览器包、Worker dry-run 与 iPhone / iPad 原生宿主应用已在[对应提交的 Actions](https://github.com/morangse/SunnyLanguageLab/actions/runs/40885159298)通过。未签名 IPA 已核对包含 0.6.1 Safari 扩展、离线词库与词频标记，设备声明包含 iPhone / iPad。真实 Safari 设备验证仍待完成，iPhone 继续标为实验支持，详见 [兼容性](../compatibility.md)。
