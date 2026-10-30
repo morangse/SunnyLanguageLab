@@ -2,7 +2,7 @@
 
 Give every sentence a little more time. Bilingual YouTube captions, sentence replay, tap-to-reveal translation, offline English-Chinese lookup and a local vocabulary notebook.
 
-**v0.6.1 is an independently rewritten preview, licensed under MIT.** The old client, icons, source ZIPs and Git history are not part of this source snapshot. Licensed dictionary data and optional vocabulary sync are retained; see [provenance](docs/maintainers/rewrite.md) and [third-party notices](THIRD_PARTY_NOTICES.md).
+**v0.6.2 is an independently rewritten preview, licensed under MIT.** The old client, icons, source ZIPs and Git history are not part of this source snapshot. Licensed dictionary data and optional vocabulary sync are retained; see [provenance](docs/maintainers/rewrite.md) and [third-party notices](THIRD_PARTY_NOTICES.md).
 
 Install using [Windows](docs/install/windows.md), [macOS](docs/install/macos.md), [iPad](docs/install/ipad.md) or [iPhone](docs/install/iphone.md) instructions. Desktop Chrome loads an unpacked extension. Safari requires an app wrapper and appropriate signing; unsigned IPA files are not directly installable. iPhone support remains experimental. See [compatibility](docs/compatibility.md) for the distinction between builds, simulation and real devices.
 

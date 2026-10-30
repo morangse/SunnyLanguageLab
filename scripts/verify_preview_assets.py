@@ -15,7 +15,8 @@ def verify(folder, version):
         raise ValueError(f'Unexpected release assets: {files ^ expected}')
     required = {'src/content/surface.js', 'src/content/word-levels.js',
                 'src/ipad/data/ECDICT-LICENSE.txt', 'src/ipad/data/word-ranks.json',
-                'src/ipad/data/en-zh-a.json', 'src/options/options.html'}
+                'src/ipad/data/en-zh-a.json', 'src/options/options.html',
+                'src/options/panel.html', 'src/options/ai-settings.js'}
     for browser in ('chrome', 'safari'):
         with zipfile.ZipFile(folder / f'SunnyLanguageLab-{browser}-v{version}.zip') as archive:
             manifest = json.loads(archive.read('manifest.json'))

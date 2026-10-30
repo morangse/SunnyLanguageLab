@@ -42,7 +42,7 @@ chrome.runtime.onMessage.addListener((message, sender) => {
       const state = await send("getState"); if (target !== surface) return;
       const old = target.settings; target.settings = state.settings;
       if (old.blurNative !== target.settings.blurNative || old.blurLearn !== target.settings.blurLearn) {
-        target.nativeVisible = false; target.originalVisible = false;
+        target.resetReveals();
       }
       // Preserve unsaved form input in the extension-origin settings drawer.
       if (target.tab !== "settings") target.render();

@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sunny 设置</title><link rel="stylesheet" href="panel.css"></head>
+<body><main>
+<nav class="section-switch" aria-label="设置分类"><button type="button" data-section="ai" aria-pressed="true">AI 解释</button><button type="button" data-section="sync" aria-pressed="false">同步与备份</button></nav>
+<section id="ai" aria-labelledby="ai-heading">
+  <header class="section-heading"><h1 id="ai-heading">AI 解释</h1><span class="badge" id="ai-status" role="status">读取中</span></header>
+  <p class="hint">需要解释时，在词卡中主动调用。</p>
+  <form id="ai-form">
+    <label for="provider">服务商</label><select id="provider"><option value="none">关闭 AI</option><option value="gemini">Google Gemini</option><option value="anthropic">Anthropic Claude</option></select>
+    <div data-ai-fields hidden>
+      <label for="model">模型 ID</label><input id="model" placeholder="填写账户可用的模型 ID" autocomplete="off" spellcheck="false">
+      <label for="api-key">API 密钥</label><input id="api-key" type="password" autocomplete="new-password" placeholder="填写 API 密钥">
+    </div>
+    <button class="primary stretch" type="submit">保存配置</button>
+    <p id="ai-message" class="message" role="status"></p>
+  </form>
+  <details><summary>旧配置与密钥</summary><div class="stack"><button id="recover-ai" type="button">恢复旧版配置</button><button id="forget-key" class="subtle" type="button">移除当前密钥</button></div></details>
+  <p class="footnote">密钥仅保存在本机。调用可能产生服务商费用。</p>
+</section>
+<section id="sync" hidden aria-labelledby="sync-heading">
+  <header class="section-heading"><h1 id="sync-heading">跨设备同步</h1><span class="badge" id="vocab-count" role="status">读取中</span></header>
+  <p id="sync-summary" class="hint" role="status">正在读取连接状态…</p>
+  <label for="sync-endpoint">服务地址</label><input id="sync-endpoint" type="url" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://你的服务.账户.workers.dev">
+  <label for="sync-token">个人同步口令</label><input id="sync-token" type="password" autocomplete="new-password" placeholder="填写同步口令">
+  <div class="action-row"><button id="sync-connect" class="primary" type="button">保存连接</button><button id="sync-now" type="button" disabled>立即同步</button></div>
+  <p id="sync-message" class="message" role="status"></p><p id="sync-error" class="error" role="status"></p>
+  <details><summary>备份与归档</summary>
+    <p class="hint">备份包含生词和原句，不含密钥。</p>
+    <div class="action-row"><button id="vocab-backup" type="button">导出 JSON</button><button id="vocab-restore" type="button">导入备份</button></div>
+    <button id="sync-archive" class="stretch" type="button" disabled>归档到 Obsidian</button>
+    <p id="sync-history" class="footnote"></p>
+    <div class="stack"><button id="vocab-legacy-backup" class="subtle" type="button">导出旧版原始数据</button><button id="sync-disconnect" class="subtle" type="button" disabled>断开同步连接</button></div>
+    <input id="vocab-import-file" type="file" accept=".json,application/json" hidden>
+  </details>
+  <p class="footnote">连接你自己的 Cloudflare 服务；同一地址和口令的设备共享词库。</p>
+</section>
+</main><script type="module" src="panel.js"></script><script type="module" src="sync-ui.js"></script></body></html>

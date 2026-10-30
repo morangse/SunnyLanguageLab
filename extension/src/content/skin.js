@@ -38,4 +38,12 @@ button:hover{background:#2b3b47}button:focus-visible,a:focus-visible,input:focus
 @media(pointer:coarse){.word{padding:8px 3px;line-height:1.8}.inline-line{padding:2px 5px}.launcher{opacity:1}}
 @media(max-width:600px){.panel{max-height:88dvh}.tabs{padding:4px 6px;gap:0}.tabs button{font-size:13px;padding:7px}.lexicon{padding-bottom:max(16px,env(safe-area-inset-bottom))}}
 @media(orientation:landscape) and (max-height:600px){.settings-frame{height:calc(100dvh - 220px);min-height:160px}.lexicon{left:auto;right:8px;top:8px;bottom:8px;width:min(360px,48vw);max-height:none}.panel .body{min-height:0}}
+/* Conceal the actual glyphs; never replace a subtitle with instructional UI. */
+button.concealed,button.concealed:hover,button.concealed:active{display:inline-block;position:relative;min-width:0;min-height:0;margin:0;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;color:inherit;font:inherit;line-height:inherit;vertical-align:baseline;max-width:100%;white-space:inherit;text-shadow:inherit;transform:none;user-select:none;-webkit-user-select:none}
+.caption-mask{display:inline-block;max-width:100%;overflow-wrap:anywhere;pointer-events:none;transition:filter .14s ease,opacity .14s ease;filter:blur(7px);opacity:.72;user-select:none;-webkit-user-select:none}
+.concealed[data-concealed=false] .caption-mask,.concealed.peek .caption-mask{filter:blur(0);opacity:1}
+.concealed:focus-visible{outline:2px solid #91bfcc;outline-offset:4px;border-radius:3px}
+.panel{background:#18232b}.tabs button:focus-visible{outline:2px solid #9cbdc9;outline-offset:-3px}
+.panel[data-tab=settings] .page{padding:0;gap:0}.panel[data-tab=settings] .settings-frame{border-radius:0;background:#18232b;color-scheme:dark;width:100%;height:100%;min-height:0;flex:1}
+@media(prefers-reduced-motion:reduce){.caption-mask{transition:none}}
 `;

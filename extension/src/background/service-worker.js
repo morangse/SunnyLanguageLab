@@ -10,12 +10,13 @@ const store = createVocabStore(chrome.storage.local);
 const sync = createSyncClient(store);
 const cache = createLookupCache();
 const optionsURL = chrome.runtime.getURL("src/options/options.html");
+const settingsPages = new Set([optionsURL, chrome.runtime.getURL("src/options/panel.html")]);
 const allowedPreferences = new Set(["enabled", "learnLang", "nativeLang", "blurNative", "blurLearn", "autoPause", "fontScale", "showSidebar", "vocabHighlight", "vocabLevel", "vocabStyle", "hoverPause", "subtitleBackdrop"]);
 const attemptSync = () => { void sync.run().catch(() => {}); };
 function optionsOnly(sender) {
   // The settings page can also run inside its own extension-origin iframe.
   // Browser-provided sender.url remains the boundary; a YouTube content script is never trusted.
-  if (sender.id !== chrome.runtime.id || String(sender.url || "").split(/[?#]/)[0] !== optionsURL) throw new Error("请在插件设置页操作");
+  if (sender.id !== chrome.runtime.id || !settingsPages.has(String(sender.url || "").split(/[?#]/)[0])) throw new Error("请在插件设置页操作");
 }
 function selected(message) {
   const text = String(message.text || "").trim();

@@ -1,0 +1,7 @@
+<!doctype html><meta charset="utf-8"><title>Sunny 设置交互夹具</title>
+<script type="module">
+const view=new URLSearchParams(location.search).get('view')==='full'?'options':'panel';
+const response=await fetch('../../extension/src/options/'+view+'.html');
+const source=await response.text();
+document.open();document.write(source.replace('<head>','<head><base href="/extension/src/options/"><script src="/tests/fixtures/settings-runtime.js"><'+'/script>'));document.close();
+</script>

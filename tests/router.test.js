@@ -15,7 +15,7 @@ test('content scripts cannot read keys, mutate AI credentials or configure sync 
   const message = (body, sender) => new Promise(resolve => listener(body, sender, resolve));
   const content = { id: chrome.runtime.id, tab: { id: 1 }, url: 'https://www.youtube.com/watch?v=test' };
   const options = { id: chrome.runtime.id, url: chrome.runtime.getURL('src/options/options.html') };
-  const embedded = { ...options, tab: { id: 1 }, frameId: 2, url: options.url + '?embedded=1#ai' };
+  const embedded = { ...options, tab: { id: 1 }, frameId: 2, url: chrome.runtime.getURL('src/options/panel.html') + '#ai' };
   for (const type of ['saveConfig', 'recoverLegacyAI', 'clearCache', 'syncConfigure', 'syncDisconnect', 'syncNow', 'syncArchive', 'vocabBackup', 'vocabLegacyBackup', 'vocabRestore']) {
     assert.match((await message({ type }, content)).error, /设置页/);
   }
@@ -28,6 +28,7 @@ test('content scripts cannot read keys, mutate AI credentials or configure sync 
   for (const url of [options.url + '.evil', 'https://www.youtube.com/src/options/options.html?embedded=1#ai']) {
     assert.match((await message({ type: 'saveConfig' }, { ...embedded, url })).error, /设置页/);
   }
+  assert.match((await message({ type: 'saveConfig' }, { ...embedded, url: chrome.runtime.getURL('src/options/panel.html') + '.evil' })).error, /设置页/);
   const config = await message({ type: 'syncConfigure', endpoint: 'https://test.user.workers.dev', token: TOKEN }, options);
   assert.ok(config.hasToken); assert.ok(!JSON.stringify(config).includes(TOKEN));
   await message({ type: 'syncDisconnect' }, options);

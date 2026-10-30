@@ -15,7 +15,7 @@ export class StudySurface {
   constructor({ video, send, settings, onPreferences = () => {} }) {
     this.video = video; this.send = send; this.settings = settings; this.onPreferences = onPreferences;
     this.cues = []; this.current = -1; this.page = 0; this.follow = true; this.tab = "subtitles";
-    this.nativeVisible = false; this.originalVisible = false; this.phrase = null; this.phraseMode = false;
+    this.resetReveals(); this.phrase = null; this.phraseMode = false;
     this.saved = new Set(); this.queryGeneration = 0; this.lastTime = 0; this.card = null;
     this.pointerKind = "mouse"; this.hoverPlaying = false; this.drag = null;
     this.host = el("div"); this.host.id = "sunny-study-surface";
@@ -27,9 +27,14 @@ export class StudySurface {
       <p class="notice" role="status" hidden></p><nav class="tabs" aria-label="学习面板"><button type="button" data-action="tab" data-tab="subtitles" aria-selected="true">字幕</button><button type="button" data-action="tab" data-tab="vocabulary" aria-selected="false">生词</button><button type="button" data-action="tab" data-tab="practice" aria-selected="false">练习</button></nav><div class="body"><section class="page"></section><section class="lexicon" hidden aria-label="查词"></section></div>
       <footer class="transport" aria-label="逐句播放"><button type="button" data-action="previous">← 上句</button><button type="button" data-action="replay">↻ 重播</button><button type="button" class="play" data-action="play">播放</button><button type="button" data-action="next">下句 →</button></footer></aside>`;
     this.$ = selector => this.root.querySelector(selector);
+    this.settingsMessage = event => {
+      const frame = this.$('.settings-frame');
+      if (frame && event.source === frame.contentWindow && event.data?.type === 'sunny-settings-section' && ['ai', 'sync'].includes(event.data.section)) this.configSection = event.data.section;
+    };
+    window.addEventListener('message', this.settingsMessage);
     // A lookup card is independent of the transcript, so querying a subtitle never opens a large panel.
     this.root.append(this.$(".lexicon"));
-    this.$(".tabs").append(button("AI / 同步", "tab", { "data-tab": "settings", "aria-selected": "false" }));
+    this.$(".tabs").append(button("设置", "tab", { "data-tab": "settings", "aria-selected": "false" }));
     this.click = event => { const target = event.target.closest("button"); if (target && !(target.dataset.action === "word" && Date.now() < this.suppressClickUntil)) void this.action(target).catch(error => this.notice(error.message)); };
     this.root.addEventListener("click", this.click);
     this.root.addEventListener("pointerdown", event => {
@@ -46,9 +51,12 @@ export class StudySurface {
         this.drag.end = Number(word.dataset.word); this.paintDrag();
       }
       if (line && !line.contains(event.relatedTarget) && this.settings.hoverPause && !this.video.paused) { this.hoverPlaying = true; this.video.pause(); }
-      if (event.target.closest(".reveal")) void this.action(event.target.closest(".reveal"));
+      const concealed = event.target.closest(".concealed");
+      if (concealed && !concealed.contains(event.relatedTarget)) concealed.classList.add("peek");
     });
     this.root.addEventListener("pointerout", event => {
+      const concealed = event.target.closest(".concealed");
+      if (event.pointerType === "mouse" && concealed && !concealed.contains(event.relatedTarget)) concealed.classList.remove("peek");
       const line = event.target.closest(".inline-line");
       if (event.pointerType === "mouse" && line && !line.contains(event.relatedTarget)) {
         if (this.hoverPlaying && !this.card && !this.drag && !this.settings.autoPause) void this.video.play().catch(() => {});
@@ -66,7 +74,7 @@ export class StudySurface {
       this.root.querySelectorAll(".drag-selected").forEach(node => node.classList.remove("drag-selected"));
     };
     document.addEventListener("pointerup", this.pointerUp); document.addEventListener("pointercancel", this.pointerUp);
-    this.seeking = () => { this.nativeVisible = false; this.originalVisible = false; this.current = -1; this.lastTime = this.video.currentTime; this.closeCard(); this.phrase = null; this.tick(true); };
+    this.seeking = () => { this.resetReveals(); this.current = -1; this.lastTime = this.video.currentTime; this.closeCard(); this.phrase = null; this.tick(true); };
     this.video.addEventListener("seeking", this.seeking);
     this.keydown = event => {
       if (event.defaultPrevented || event.ctrlKey || event.metaKey || /INPUT|TEXTAREA|SELECT|IFRAME/.test(this.root.activeElement?.tagName) || this.root.activeElement?.isContentEditable || event.composedPath().some(node => /INPUT|TEXTAREA|SELECT|IFRAME/.test(node?.tagName) || node?.isContentEditable)) return;
@@ -89,10 +97,21 @@ export class StudySurface {
   paintDrag() {
     this.root.querySelectorAll(".word").forEach(node => node.classList.toggle("drag-selected", Number(node.dataset.cue) === this.drag.cue && Number(node.dataset.word) >= Math.min(this.drag.start, this.drag.end) && Number(node.dataset.word) <= Math.max(this.drag.start, this.drag.end)));
   }
+  resetReveals() { this.revealed = { native: new Set(), original: new Set() }; }
+  updateConcealment() {
+    this.root.querySelectorAll(".concealed").forEach(target => {
+      const native = target.dataset.action === "reveal-native", kind = native ? "native" : "original";
+      const visible = this.revealed[kind].has(Number(target.dataset.cue));
+      target.dataset.concealed = String(!visible); target.setAttribute("aria-pressed", String(visible));
+      const text = target.querySelector(".caption-mask");
+      target.setAttribute("aria-label", visible ? text.textContent + '（再次点按隐藏）' : "显示" + (native ? "中文字幕" : "原文字幕"));
+      if (visible) text.removeAttribute("aria-hidden"); else text.setAttribute("aria-hidden", "true");
+    });
+  }
   notice(text = "") { this.$(".notice").textContent = text; this.$(".notice").hidden = !text; }
   setCues(cues, metadata = {}) {
     this.cues = cues; this.metadata = metadata; this.current = -1; this.page = 0; this.follow = true;
-    this.nativeVisible = false; this.originalVisible = false; this.phrase = null; this.closeCard();
+    this.resetReveals(); this.phrase = null; this.closeCard();
     this.notice(metadata.warning || ""); this.tick(true);
   }
   async refreshSaved() {
@@ -109,7 +128,7 @@ export class StudySurface {
   async preference(key, value) {
     const next = value === undefined ? !this.settings[key] : value;
     const response = await this.send("preferencesPatch", { patch: { [key]: next } });
-    this.settings = response.settings; this.nativeVisible = false; this.originalVisible = false; this.phrase = null;
+    this.settings = response.settings; this.resetReveals(); this.phrase = null;
     this.render(); this.renderInline(); this.onPreferences(key);
   }
   words(cue, index) {
@@ -128,8 +147,12 @@ export class StudySurface {
   appendLine(target, cue, index, native) {
     target.replaceChildren();
     if (native && !cue.native) return;
-    const hidden = native ? this.settings.blurNative && !(this.nativeVisible && index === this.current) : this.settings.blurLearn && !(this.originalVisible && index === this.current);
-    if (hidden) { const reveal = button(native ? "轻点显示中文" : "轻点显示原文", native ? "reveal-native" : "reveal-original", { "data-cue": index }); reveal.className = "reveal"; target.append(reveal); }
+    const hidden = native ? this.settings.blurNative && !this.revealed.native.has(index) : this.settings.blurLearn && !this.revealed.original.has(index);
+    if (hidden || (native && this.settings.blurNative)) {
+      const reveal = button(undefined, native ? "reveal-native" : "reveal-original", { "data-cue": index, class: "concealed", "data-concealed": String(hidden), "aria-label": hidden ? "显示" + (native ? "中文字幕" : "原文字幕") : cue.native + '（再次点按隐藏）', "aria-pressed": String(!hidden) });
+      const text = el("span", native ? cue.native : cue.text, { class: "caption-mask" + (native ? " native-text" : "") });
+      if (hidden) text.setAttribute("aria-hidden", "true"); reveal.append(text); target.append(reveal);
+    }
     else if (native) { const text = el("span", cue.native, { class: "native-text" }); target.append(text); }
     else target.append(this.words(cue, index));
   }
@@ -144,12 +167,9 @@ export class StudySurface {
     const page = this.$(".page"); page.replaceChildren();
     this.root.querySelectorAll(".tabs button").forEach(node => node.setAttribute("aria-selected", String(node.dataset.tab === this.tab)));
     if (this.tab === "settings") {
-      page.append(el("h2", "AI 与跨设备同步"), el("p", "配置保存在插件自己的设置页，字幕网页读不到密钥。", { class: "tip" }));
-      const links = el("div", undefined, { class: "tools" });
-      links.append(button("AI 接入", "configure", { "data-section": "ai" }), button("同步 / Obsidian", "configure", { "data-section": "sync" }), button("完整设置 ↗", "options")); page.append(links);
       const frame = el("iframe", undefined, { class: "settings-frame", title: "Sunny AI 与同步设置" });
-      const base = globalThis.chrome?.runtime?.getURL ? chrome.runtime.getURL("src/options/options.html") : new URL("../options/options.html", import.meta.url).href;
-      frame.src = base + "?embedded=1#" + (this.configSection || "ai"); page.append(frame); return;
+      const base = globalThis.chrome?.runtime?.getURL ? chrome.runtime.getURL("src/options/panel.html") : new URL("../options/panel.html", import.meta.url).href;
+      frame.src = base + "#" + (this.configSection || "ai"); page.append(frame); return;
     }
     if (this.tab === "practice") {
       page.append(el("h2", "按自己的节奏"), el("p", "电脑可拖选短语、悬停暂停；触屏可点按首尾词。", { class: "tip" }));
@@ -258,13 +278,14 @@ export class StudySurface {
       const index = action === "seek" ? Number(target.dataset.cue) : action === "previous" ? at - 1 : action === "next" ? at + 1 : at;
       if (!this.cues.length) return;
       const cue = this.cues[Math.max(0, Math.min(this.cues.length - 1, index))];
-      this.nativeVisible = false; this.originalVisible = false; this.closeCard(); this.phrase = null;
+      this.resetReveals(); this.closeCard(); this.phrase = null;
       this.video.currentTime = cue.start + 0.01; this.current = -1; this.lastTime = this.video.currentTime; await this.video.play(); this.tick(true); return;
     }
     if (action.startsWith("reveal-")) {
       const index = Number(target.dataset.cue);
-      if (index !== this.current) { this.notice("先点时间回到这一句，再揭晓字幕。"); return; }
-      if (action === "reveal-native") this.nativeVisible = true; else this.originalVisible = true;
+      const kind = action === "reveal-native" ? "native" : "original", revealed = this.revealed[kind];
+      if (revealed.has(index)) revealed.delete(index); else revealed.add(index);
+      if (kind === "native") { this.updateConcealment(); return; }
       this.render(); this.renderInline(); return;
     }
     if (action === "follow") { this.follow = true; this.page = Math.max(0, this.current - 10); this.render(); this.$(".cue.current")?.scrollIntoView({ block: "nearest" }); return; }
@@ -302,7 +323,7 @@ export class StudySurface {
         this.lastTime < this.cues[prior].end && time >= this.cues[prior].end && time - this.lastTime < 0.7) this.video.pause();
     this.lastTime = time;
     if (!this.drag && (index !== this.current || force)) {
-      if (index !== this.current) { this.nativeVisible = false; this.originalVisible = false; this.phrase = null; }
+      if (index !== this.current) { this.resetReveals(); this.phrase = null; }
       this.current = index;
       if (this.follow && index >= 0 && (index < this.page || index >= this.page + 50)) this.page = Math.max(0, index - 10);
       if (this.tab === "subtitles") this.render(); this.renderInline();
@@ -331,5 +352,5 @@ export class StudySurface {
     const parent = fullscreen && fullscreen !== this.video ? fullscreen : document.body;
     if (this.host.parentNode !== parent) parent.append(this.host);
   }
-  destroy() { clearInterval(this.timer); this.queryGeneration++; this.video.removeEventListener("seeking", this.seeking); document.removeEventListener("keydown", this.keydown); document.removeEventListener("pointerup", this.pointerUp); document.removeEventListener("pointercancel", this.pointerUp); this.host.remove(); }
+  destroy() { clearInterval(this.timer); this.queryGeneration++; this.video.removeEventListener("seeking", this.seeking); document.removeEventListener("keydown", this.keydown); document.removeEventListener("pointerup", this.pointerUp); document.removeEventListener("pointercancel", this.pointerUp); window.removeEventListener('message', this.settingsMessage); this.host.remove(); }
 }
